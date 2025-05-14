@@ -33,8 +33,5 @@ export const validarBody = [
 export const validarNumDocumento = [
   check("numeroDocumento")
     .notEmpty()
-    .withMessage("No se recibió la clave Número Documento")
-    .toInt()
-    .isNumeric()
     .withMessage("El valor Número Documento debe ser numérico."),
 ];

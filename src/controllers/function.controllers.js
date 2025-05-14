@@ -1,8 +1,6 @@
 import { formatoRta } from "../scripts/formatoRta.js";
 import { obtenerFechaYHoraActual } from "../scripts/fechaHoraActual.js";
-import fs from "fs";
-import util from "util";
-import dayjs from "dayjs";
+//import { ObjectId } from "mongodb";
 import "dayjs/locale/es.js";
 import { MongoLib } from "../../lib/mongo.js";
 
@@ -83,29 +81,37 @@ export const crearTrabajador = async (req, res) => {
 };
 
 export const consTrabajador = async (req, res) => {
-  console.log("consTrabajador, req.params =>", req.query);
-
-  obtenerFechaYHoraActual();
+  console.log("consTrabajador, req.query =>", req.query);
 
   const { numeroDocumento } = req.query;
-  console.log("🚀 92 ~ consTrabajador ~ numeroDocumento:", numeroDocumento);
-
-  //en este parte ya se debe validar por el express-validator
   const db = new MongoLib();
 
   try {
-    // Conectarse a la base de datos
     const database = await db.connect();
     const collection = database.collection("trabajadores");
-    // Buscar el trabajador por número de documento
-    const trabajador = await collection.findOne({ numeroDocumento });
 
-    if (trabajador) {
-      console.log("Trabajador encontrado:", trabajador);
-      res.status(200).json(trabajador);
+    if (numeroDocumento) {
+      // Buscar un solo trabajador por número de documento
+      const trabajador = await collection.findOne({ numeroDocumento });
+
+      if (trabajador) {
+        console.log("Trabajador encontrado:", trabajador);
+        res.status(200).json(trabajador);
+      } else {
+        console.log("No se encontró el trabajador");
+        res.status(404).json(formatoRta(404, "", "Trabajador no encontrado"));
+      }
     } else {
-      console.log("No se encontró el trabajador");
-      res.status(404).json(formatoRta(404, "", "Trabajador no encontrado"));
+      // Si no hay número de documento, retornar todos los trabajadores
+      const trabajadores = await collection.find({}).toArray();
+
+      if (trabajadores.length > 0) {
+        console.log("Trabajadores encontrados:", trabajadores.length);
+        res.status(200).json(trabajadores);
+      } else {
+        console.log("No hay trabajadores registrados");
+        res.status(200).json([]); // retorna arreglo vacío si no hay resultados
+      }
     }
   } catch (error) {
     console.error("Error en consTrabajador:", error);
@@ -113,7 +119,7 @@ export const consTrabajador = async (req, res) => {
       .status(500)
       .json(
         formatoRta(
-          error.code,
+          error.code || 500,
           "",
           "Ocurrió un error en el servidor. Por favor, inténtelo de nuevo."
         )
@@ -124,80 +130,76 @@ export const consTrabajador = async (req, res) => {
 };
 
 export const editarTrabajador = async (req, res) => {
-  console.log("editTrabajador, req.body =>", req.body);
+  console.log("editarTrabajador → req.body:", req.body);
+  console.log("editarTrabajador → req.params:", req.params);
+
+  const { numeroDocumento } = req.params;
   const {
-    Nombre,
-    numeroDocumento,
+    nombre,
     tipoDocumento,
     email,
     fechaExpedicionDocumento,
     dependencia,
   } = req.body;
 
-  obtenerFechaYHoraActual();
   const fechaRegistro = new Date();
-
   const db = new MongoLib();
 
   try {
-    // Conectar a la base de datos
     const database = await db.connect();
     const collection = database.collection("trabajadores");
-    //consultar si el dato existe
-    // Buscar el trabajador por número de documento
-    const trabajador = await collection.findOne({ numeroDocumento });
-    if (trabajador) {
-      const result = await collection.updateOne(
-        { numeroDocumento }, //---> para validar el registro que se va a actualizar
-        {
-          $set: {
-            nombre,
-            tipoDocumento,
-            email,
-            fechaRegistro,
-            fechaExpedicionDocumento,
-            dependencia,
-          },
-        }
-      );
-      console.log("🚀 ~ editarTrabajador ~ result:", result);
 
-      if (result.matchedCount === 1) {
-        console.log("Trabajador actualizado:", numeroDocumento);
-        res
-          .status(200)
-          .json(
-            formatoRta(
-              "",
-              "",
-              `Trabajador con documento ${numeroDocumento} actualizado con éxito`
-            )
-          );
-      } else {
-        console.log("El registro no se actualizó correctamente");
-        res.status(404).json(formatoRta("", "", "Trabajador no encontrado"));
-      }
-    } else {
-      res.status(401).json(formatoRta("", "", "Trabajador no encontrado"));
+    // Buscar si el trabajador existe
+    const trabajador = await collection.findOne({ numeroDocumento });
+
+    if (!trabajador) {
+      return res.status(404).json(formatoRta(404, "", "Trabajador no encontrado"));
     }
-  } catch (error) {
-    console.error("Error en editTrabajador:", error);
-    res
-      .status(500)
-      .json(
+
+    const result = await collection.updateOne(
+      { numeroDocumento },
+      {
+        $set: {
+          nombre,
+          tipoDocumento,
+          email,
+          fechaRegistro,
+          fechaExpedicionDocumento,
+          dependencia,
+        },
+      }
+    );
+
+    console.log("Resultado de actualización:", result);
+
+    if (result.modifiedCount === 1 || result.matchedCount === 1) {
+      return res.status(200).json(
         formatoRta(
-          error.code,
           "",
-          "Ocurrió un error en el servidor. Por favor, inténtelo de nuevo."
+          "",
+          `Trabajador con documento ${numeroDocumento} actualizado con éxito`
         )
       );
+    } else {
+      return res.status(500).json(formatoRta("", "", "No se pudo actualizar el trabajador"));
+    }
+  } catch (error) {
+    console.error("Error en editarTrabajador:", error);
+    return res.status(500).json(
+      formatoRta(
+        error.code || 500,
+        "",
+        "Ocurrió un error en el servidor. Por favor, inténtelo de nuevo."
+      )
+    );
   } finally {
     await db.close();
   }
 };
 
+
 export const elimTrabajador = async (req, res) => {
-  console.log("elimTrabajador, req.params =>", req.query);
+  console.log("elimTrabajador, req.query =>", req.query);
   obtenerFechaYHoraActual();
 
   const { numeroDocumento } = req.query;
@@ -205,75 +207,47 @@ export const elimTrabajador = async (req, res) => {
   if (!numeroDocumento) {
     return res
       .status(400)
-      .json(formatoRta("", "", "No se recibió el número de documento"));
+      .json(formatoRta("", "", "No se recibió el número de documento del trabajador."));
   }
+
   const db = new MongoLib();
+
   try {
-    // Conectarse a la base de datos
     const database = await db.connect();
     const collection = database.collection("trabajadores");
 
-    // Intentar eliminar el trabajador por número de documento
     const result = await collection.deleteOne({ numeroDocumento });
 
     if (result.deletedCount === 1) {
-      console.log("Trabajador eliminado:", numeroDocumento);
-      res
+      console.log("Trabajador eliminado con número de documento:", numeroDocumento);
+      return res
         .status(200)
-        .json(
-          formatoRta(
-            "",
-            "",
-            `Trabajador con documento ${numeroDocumento} eliminado exitosamente`
-          )
-        );
+        .json(formatoRta("", "", `Trabajador con número de documento ${numeroDocumento} eliminado exitosamente.`));
     } else {
-      console.log("Trabajador no encontrado para eliminación");
-      res.status(404).json(formatoRta("", "", "Trabajador no encontrado"));
+      console.log("Trabajador no encontrado para eliminación:", numeroDocumento);
+      return res
+        .status(404)
+        .json(formatoRta("", "", "Trabajador no encontrado."));
     }
   } catch (error) {
     console.error("Error en elimTrabajador:", error);
-    res
-      .status(500)
-      .json(
-        formatoRta(
-          error.code,
-          "",
-          "Ocurrió un error en el servidor. Por favor, inténtelo de nuevo."
-        )
-      );
+    return res.status(500).json(
+      formatoRta(
+        error.code || "",
+        "",
+        "Ocurrió un error interno del servidor. Por favor, inténtelo de nuevo."
+      )
+    );
   } finally {
     await db.close();
   }
 };
 
-/* export const appCrear = async (req, res) => {
-  console.log("Ingresé al controlador de crear");
-  console.log(req.body);
-  const data = req.body;
-  res.status(404).json({ data });
-};
-
-///controlador para actualizar datos
-export const appActualizar = async (req, res) => {
-  console.log("Ingresé al controlador de actualización");
-  console.log(req.body);
-  res.status(200).json({"msg":req.body})
-  
-};
-
-///controlador para consultar por método GET
-export const appConsultar = async (req, res) => {
-  console.log("Ingresé al controlador de consultas");
-  const id = req.query.id;
-  console.log("🚀 ~ appConsultar ~ id:", id);
-  res.status(408).json({ id });
-};
- */
-
 export const bookingConnect = async (req, res) => {
   const response = req.body;
   console.log(response.components.schemas.Room.properties.type);
 
-  res.status(200).json(formatoRta("", "", "This is the Booking API connect testing module"));
+  res
+    .status(200)
+    .json(formatoRta("", "", "This is the Booking API connect testing module"));
 };

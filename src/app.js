@@ -11,7 +11,7 @@ app.use(express.json());
 app.use(
   cors({
     origin: ["http://localhost:5501", "http://127.0.0.1:5501/index.html"],
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type"],
   })
 );
@@ -21,6 +21,7 @@ app.options("*", cors()); // Habilitar preflight para todas las rutas
 app.use("/api", appRoutes);
 
 app.use((req, res, next) => {
+  console.log(req)
   console.log("Petición a ruta no encontrada");
   res.status(404).json({ msg: "Petición a ruta no encontrada" });
 });

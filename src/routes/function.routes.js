@@ -13,18 +13,18 @@ import {
 } from "../../middleware/validation/validation.js";
 
 const router = Router();
-router.post("/crear", validarBody, resultadoValidacion, crearTrabajador);
-router.put("/actualizar", validarBody, resultadoValidacion, editarTrabajador);
+router.post("/crear", /* validarBody, resultadoValidacion,  */crearTrabajador);
+router.put("/actualizar/:numeroDocumento", editarTrabajador);
 router.get(
-  "/consultar",
+  "/consultar",/* 
   validarNumDocumento,
-  resultadoValidacion,
+  resultadoValidacion, */
   consTrabajador
 );
 router.delete(
-  "/eliminar",
+  "/eliminar",/* 
   validarNumDocumento,
-  resultadoValidacion,
+  resultadoValidacion, */
   elimTrabajador
 );
 router.post("/openapi", bookingConnect);
