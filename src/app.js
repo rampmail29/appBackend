@@ -10,7 +10,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: ["http://localhost:5501", "http://127.0.0.1:5501/index.html", "appbackend-production-96c6.up.railway.app"],
+    origin: ["http://localhost:8081", "http://127.0.0.1:5501/index.html", "https://appbackend-production-96c6.up.railway.app", "*"],
     methods: ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type"],
   })
