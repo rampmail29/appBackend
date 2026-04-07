@@ -10,7 +10,7 @@ export const validarBody = [
     .toInt()
     .isNumeric()
     .withMessage("La clave numeroDocumento debe ser numérica"),
-  check("Nombre").notEmpty().withMessage("No se recibió la clave nombre"),
+  check("nombre").notEmpty().withMessage("No se recibió la clave nombre"),
   check("email")
     .notEmpty()
     .withMessage("No se recibió la clave email")

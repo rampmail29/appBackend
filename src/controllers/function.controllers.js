@@ -245,7 +245,8 @@ export const elimTrabajador = async (req, res) => {
 
 export const bookingConnect = async (req, res) => {
   const response = req.body;
-  console.log(response.components.schemas.Room.properties.type);
+  const roomType = response?.components?.schemas?.Room?.properties?.type;
+  console.log(roomType);
 
   res
     .status(200)

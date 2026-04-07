@@ -1,7 +1,5 @@
 import express from "express";
 import cors from "cors";
-import pkg from "express-validator";
-const { body, query, ExpressValidator, ValidationChain } = pkg;
 import appRoutes from "./routes/function.routes.js";
 
 const app = express();
